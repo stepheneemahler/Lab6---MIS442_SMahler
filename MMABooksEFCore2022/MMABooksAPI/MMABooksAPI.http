@@ -1,0 +1,6 @@
+@MMABooksAPI_HostAddress = http://localhost:5258
+
+GET {{MMABooksAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
