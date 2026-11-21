@@ -122,20 +122,18 @@ class CustomerPage {
     event.preventDefault();
     if (this.state.customerId != "") {
       fetch(`${this.url}/${this.state.customerId}`, {method: 'DELETE'})
-      .then(response => response.json())
-      .then(data => { 
-        // returns the record that we deleted so the ids should be the same 
-        if (this.state.customerId == data.customerId)
-        {
+            .then(response => {
+        // the API doesn't send back a body for a delete, just a success status code (204)
+        if (response.ok) {
           this.state.customerId = "";
           this.state.customer = null;
           this.$customerId.value = "";
           this.clearCustomerFields();
           this.enableButtons("pageLoad");
-          alert("Customer was deleted.")
+          alert("Customer was deleted.");
         }
-        else{
-          alert('There was a problem deleting customer info!'); 
+        else {
+          alert('There was a problem deleting customer info!');
         }
       })
       .catch(error => {
