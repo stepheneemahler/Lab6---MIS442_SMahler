@@ -59,17 +59,22 @@ class CustomerPage {
   // makes an api call to /api/states to get the list of states
   // populates the combo box on the page with the state information
   fetchStates() {
+    // sends a GET request to the API for the list of all states
     fetch(`${this.server}/states`)
+    // turns the JSON the API sends back into a list of state objects
     .then(response => response.json())
     .then(data => { 
+      // if the list is empty, warn the user since a customer needs a state to be added or edited
       if (data.length == 0) {
         alert("Can't load states.  Can not add or edit customers without state inforamtion.");
       }
+      // otherwise save the states and use them to build the State dropdown
       else {
         this.state.states = data;
         this.loadStates();
       }
     })
+    // runs if the request fails, like when the API isn't running or CORS blocks it
     .catch(error => {
       alert('There was a problem getting customer info!'); 
     });
@@ -90,27 +95,34 @@ class CustomerPage {
   }
 
   // makes an api call to /api/customer/# where # is the primary key of the customer
-  // finds a customer based on customer id.  in a future version it would be better to search by name
+  // finds a customer based on customer id
   onFindCustomer(event) {
     event.preventDefault();
+    // only search if a customer id was typed in
     if (this.$customerId.value != "") {
       this.state.customerId = this.$customerId.value;
+      // sends a GET request for one customer
       fetch(`${this.url}/${this.state.customerId}`)
+      // turns the JSON the API sends back into a customer object
       .then(response => response.json())
       .then(data => { 
+        // if that id isn't in the database, the API sends back an error object with status 404
         if (data.status == 404) {
           alert('That customer does not exist in our database'); 
         }
+        // save the customer in the database
         else {
           this.state.customer = data;
           this.fillCustomerFields();
           this.enableButtons("found");
         }
       })
+      // runs if the request fails, like when the API isn't running
       .catch(error => {
         alert('There was a problem getting customer info!'); 
       });
     }
+    // no id was typed in, so just clear the form
     else {
       this.clearCustomerFields();
     }
@@ -121,10 +133,12 @@ class CustomerPage {
   onDeleteCustomer(event) {
     event.preventDefault();
     if (this.state.customerId != "") {
+      // sends a DELETE request for this customer
       fetch(`${this.url}/${this.state.customerId}`, {method: 'DELETE'})
-            .then(response => {
-        // the API doesn't send back a body for a delete, just a success status code (204)
+      .then(response => {
+        // the API doesn't send back a body for a delete, just a success status code (204),
         if (response.ok) {
+          // clear out the deleted customer and reset the form and buttons
           this.state.customerId = "";
           this.state.customer = null;
           this.$customerId.value = "";
@@ -132,6 +146,7 @@ class CustomerPage {
           this.enableButtons("pageLoad");
           alert("Customer was deleted.");
         }
+        // the API returned an error status, so the customer wasn't deleted
         else {
           alert('There was a problem deleting customer info!');
         }
@@ -141,19 +156,21 @@ class CustomerPage {
       });
     }
     else {
-      // this should never happen if the right buttons are enabled
     }
   }
 
-  // makes either a post or a put request to /api/customers
+    // makes either a post or a put request to /api/customers
   // either adds a new customer or updates an existing customer in the database
   // based on the customer information in the form
   onSaveCustomer(event) {
     event.preventDefault();
     // adding
+    // no customer id means this is a new customer, so send a POST to /api/customers
     if (this.state.customerId == "") {
       fetch(`${this.url}`, {
         method: 'POST', 
+        // the body is the new customer as JSON, built from what was typed in the form
+        // customerId is 0 because the database assigns the real id when it's saved
         body: JSON.stringify({
           customerId: 0, 
           name: this.$customerName.value,
@@ -164,13 +181,16 @@ class CustomerPage {
           invoices: [], 
           state: null
         }),
+        // tells the API that the body is JSON
         headers: {
           'Content-Type': 'application/json'
         }
       })
+      // turns the JSON reply (the customer that was just added) into an object
       .then(response => response.json())
       .then(data => { 
         // returns the record that we added so the ids should be there 
+        // if it has a customerId, the add worked, so show the new customer and its new id
         if (data.customerId)
         {
           this.state.customerId = data.customerId;
@@ -181,6 +201,7 @@ class CustomerPage {
           this.enableButtons("found");
           alert("Customer was added.")
         }
+        // the API ran into a problem adding customer info
         else{
           alert('There was a problem adding customer info!'); 
         }
@@ -189,10 +210,8 @@ class CustomerPage {
         alert('There was a problem adding customer info!'); 
       });
     }
-    // updating
+    // there is a relevant customer and the system updates their details
     else {
-      // the format of the body has to match the original object exactly 
-      // so make a copy of it and copy the values from the form
       let customer = Object.assign(this.state.customer);
       customer.name = this.$customerName.value;
       customer.address = this.$customerAddress.value;
@@ -207,7 +226,6 @@ class CustomerPage {
         }
       })
       .then(response => {
-        // doesn't return a body just a status code of 204 
         if (response.status == 204)
         {
           this.state.customer = Object.assign(customer);
@@ -224,16 +242,6 @@ class CustomerPage {
         alert('There was a problem adding customer info!'); 
       });
     }
-  }
-
-  // makes the fields editable
-  onEditCustomer(event) {
-    event.preventDefault();
-    // can't edit the customer id
-    this.$customerId.readOnly = true;
-    this.makeFieldsReadOnly(false);
-    this.makeFieldsRequired(true);
-    this.enableButtons("editing");
   }
 
   // clears the form for input of a new customer
